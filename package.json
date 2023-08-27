@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "jsonwebtoken": "^9.0.1",
     "socket.io": "^4.7.2"
   }
 }
