@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            font-size: 14px;
+        }
+        body{
+            padding: auto;
+            display: block;
+        }
+        .start-form{
+            z-index: 10;
+            position: fixed;
+            top:0;
+            right: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: white;
+            display: flex;
+        }
+        .start-form .content {
+            margin: auto;
+            width: 300px;
+            height: fit-content;
+            background-color: white;
+            border: 0px;
+        }
+        .start-form .content input{
+            padding: 0.75rem 0.5rem;
+            font-size: 1.25rem;
+        }
+        .start-form .content button{
+            padding: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .content {
+            width: 90vw;
+            display: flex;
+            flex-direction:column;
+            border: solid 1px;
+            margin-top: 5vh;
+            height: calc(100vh - 6rem);
+            overflow-y: auto;
+            margin: auto;
+            padding: 1rem;
+        }
+        .content .message {
+            margin-bottom: 1rem;
+        }
+        .content .nickname{
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .content .text{
+            font-size: 1.25rem;
+        }
+        .input-container {
+            margin: auto;
+            margin-top: 1rem;
+            position: relative;
+            width: 90vw;
+            display: flex;
+            align-items: center;
+        }
+
+        .text-input{
+            flex:1;
+            padding: 0.75rem 0.5rem;
+        }
+        .image-input-label{
+            display: block;
+            width: fit-content;
+            height: fit-content;
+            line-height: 1;
+          
+        }
+        .icon{
+            width: 28px;
+            height: 28px;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        img {
+            max-width: 50%;
+            max-height: auto;
+            margin-top: 0.5rem;
+        }
+        .my-property{
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="content"></div>
+    <div class="start-form">
+        <div class="content">
+            <input type="text" placeholder="Enter your nickname" id="nickname">
+            <button onclick="handleJoinChat()">Join Chat</button>
+        </div>
+    </div>
+    <div class="input-container">
+            <input name="image-input" type="file" class="image-input" onchange="handleSendImage(event)">
+            <svg onclick="handleSelectImage()" class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g id="images"><path d="M18.5,3.75H8.5A2.75,2.75,0,0,0,5.75,6.5v.25H5.5A2.75,2.75,0,0,0,2.75,9.5v8A2.75,2.75,0,0,0,5.5,20.25h10a2.75,2.75,0,0,0,2.75-2.75v-.25h.25a2.75,2.75,0,0,0,2.75-2.75v-8A2.75,2.75,0,0,0,18.5,3.75ZM7.25,6.5A1.25,1.25,0,0,1,8.5,5.25h10A1.25,1.25,0,0,1,19.75,6.5v6.2l-2.27-1.91a.74.74,0,0,0-1.05.08l-1.07,1.26-4-3.88A.7.7,0,0,0,10.84,8a.75.75,0,0,0-.54.26L7.25,11.89ZM8.5,15.75A1.25,1.25,0,0,1,7.25,14.5v-.3l3.67-4.32,3.46,3.39-2.1,2.48Zm8.25,1.75a1.25,1.25,0,0,1-1.25,1.25H5.5A1.25,1.25,0,0,1,4.25,17.5v-8A1.25,1.25,0,0,1,5.5,8.25h.25V14.5A2.75,2.75,0,0,0,8.5,17.25h8.25Zm1.75-1.75H14.25l2.84-3.34,2.63,2.23A1.23,1.23,0,0,1,18.5,15.75Z"/></g></svg>       
+        <input type="text" onkeydown="handleSendText(event)" class="text-input">
+    </div>
+</body>
+<script  src="/socket.io/socket.io.js"></script>
+
+<script>
+  const socket = io();
+  const content = document.getElementsByClassName("content")[0]
+
+  let nickname = null;
+
+  socket.on("join chat", data=>{
+    if(data != ""){
+        console.log("Join chat succeed")
+        nickname = data;
+        handleOpenChat();
+    } else {
+        console.log("Join chat failed")
+    }
+  })
+
+  socket.on("receive text", data=>{
+    const content = document.getElementsByClassName("content")[0]
+    const p = document.createElement('p');
+    const sender = document.createElement('p');
+    const text = document.createElement('p');
+    
+    p.className = 'message';
+    sender.className = "nickname"
+    text.textContent = data['content'];
+    text.className = "text"
+
+    if(nickname == data.nickname){
+        sender.textContent = `You - ${nickname}`
+        p.className += ' my-property'
+    } else {
+        sender.textContent = `@${data.nickname}`
+    }
+    p.appendChild(sender);
+    p.appendChild(text);
+    content.appendChild(p)
+    content.scrollTo(0, content.scrollHeight, {behavior:'smooth'})
+  })
+
+  socket.on("receive image", data=>{
+
+    const p = document.createElement('p');
+    const img = document.createElement("img");
+    const sender = document.createElement('p');
+
+    p.className = 'message';
+    sender.className = "nickname";
+    img.src = `data:image/png;base64,${data['content']}`
+    
+    if(nickname == data.nickname){
+        sender.textContent =  `You - ${nickname}`
+        p.className += " my-property"
+    } else{
+        sender.textContent = `@${data.nickname}`
+    }
+    p.appendChild(sender);
+    p.appendChild(img);
+    content.appendChild(p);
+    content.scrollTo(0, content.scrollHeight + 100, {behavior:'smooth'})  
+})
+
+function imageToBase64(file, callback) {
+  const reader = new FileReader();
+  reader.onloadend = function() {
+    const base64String = reader.result.split(',')[1];
+    callback(null, base64String);
+  };
+  reader.onerror = function() {
+    callback(new Error('Lỗi khi đọc hình ảnh.'));
+  };
+  reader.readAsDataURL(file);
+}
+
+
+function handleJoinChat(){
+    const nickname = document.getElementById('nickname').value;
+    socket.emit("join chat", nickname)
+}
+
+function handleOpenChat(){
+    document.getElementsByClassName('start-form')[0].style.display = "none"
+}
+
+function handleSendText(event){
+    if (event.keyCode === 13) {
+        const textInput = document.getElementsByClassName("text-input")[0]
+        socket.emit("send text", {
+            nickname,
+            content: textInput.value
+        })
+        textInput.value = "" 
+    }
+}
+
+
+function handleSelectImage(){
+    const imageInput = document.getElementsByClassName('image-input')[0]; 
+    imageInput.click()
+}
+
+function handleSendImage(event){
+  const file = event.target.files[0];
+  imageToBase64(file, (err, base64String) => {
+    if (err) {
+      console.error('Lỗi:', err);
+    } else {
+      socket.emit('send image', {
+        nickname,
+        content: base64String
+      })
+    }
+  });
+}
+
+
+
+</script>
+</html>
